@@ -1,63 +1,90 @@
 <?php
 
-/**
- * Optmizer must extend OptimizerEngine
- * OptimizerEngine must implement OptimizerEngineInterface
- * OptimizerEngineInterface must implement CSSOptimizer and JSOptimizer
- * CSSOptimizer must include methods optimizeCSS
- * JSOptimizer must include methods optimizejs
- * 
- * class UNCSS must implement CSSOptimizer
- * class XUNCSS must implement CSSOptimizer
- * class YUNCSS must implement CSSOptimizer
- * 
- * class OptimizerEngine must be able to select correct CSSOptimizer
- */
-
-interface CSSOptimizerInterface
+interface CSSCleanerInterface
 {
-    public function removeUnusedCSS();
+    // Returns path of optimized css file or empty string if optimization failed
+    public function removeUnusedCSS($filepath) : string;
 }
 
 interface CSSMinimizerInterface
 {
-    public function minifyCSS();
+    // Returns path of minimized css file or empty string is minimization failed
+    public function minifyCSS($filepath) : string;
 }
 
-/** 
- * Interface used to declare CSS Optimization methods
- */
-interface CSSOptimizerEngineInterface extends CSSOptimizerInterface, CSSMinimizerInterface{
-    public function getOptimizer($slug, $optimzer);
+interface JSMinimizerInterface
+{
+    // Returns path of minimized js file or empty string is minimization failed
+    public function minifyJS($filepath) : string;
 }
 
-/**
- * Class that implements CSSOptimizerInterface, this is used to specifically used with UNCSS tool
- */
-class UNCSSOptimizer implements CSSOptimizerInterface{
-
-    public function optimizeCSS(CSSOptimizerInterface $cssOptimizer) {
-        $cssOptimizer->removeUnusedCSS();
-    }
-
-    public function removeUnusedCSS() {
-
+class UnCSSProxy implements CSSCleanerInterface {
+    public function removeUnusedCSS($filepath) : string
+    {
+        // This is where the logic will be written
+        // Check extension
+        return "";
     }
 }
 
-class CSSOptimizerEngine implements CSSOptimizerEngineInterface {
-
-    public function getOptimizer($lug, $optimzer) {
-        //Return the correct optimizer based on parameters
+class HeliumCSSProxy implements CSSCleanerInterface {
+    public function removeUnusedCSS($filepath) : string
+    {
+        return "";
     }
+}
 
-    public function removeUnusedCSS() {
-        //Call selected optimiezer removeUnusedCSS
-    }
+class CSSMinimizerProxy implements CSSMinimizerInterface {
     
-    public function minifyCSS() {
-        //Call selected optimiezer minifyCSS
+    public function minifyCSS($filepath) : string
+    {
+        return "";
+    }
+}
 
+class JSMinimizerProxy implements JSMinimizerInterface {
+    public function minifyJS($filepath) : string
+    {
+        return "";
+    }
+}
+
+interface OptimizerInterface {
+    public function optimizeAll(Array $filepathsArray);
+    public function optimizeCSS(Array $filepathsArray);
+    public function optimizeJS(Array $filepathsArray);
+}
+
+class WPOptimizer implements OptimizerInterface{
+
+    private $cssCleaner;
+    private $cssMinimizer;
+    private $jSMinimizer;
+
+    public function __construct( CSSCleanerInterface $cssCleaner, CSSMinimizerInterface $cssMinimizer, JSMinimizerInterface $jSMinimizer ) {
+        $this->cssCleaner = $cssCleaner;
+        $this->cssMinimizer = $cssMinimizer;
+        $this->jSMinimizer = $jSMinimizer;
+    }
+
+    public function optimizeAll($filepathsArray)
+    {
+        foreach ($filepathsArray as $filepath) {
+            $this->cssCleaner->removeUnusedCSS($filepath);
+            $this->cssMinimizer->minifyCSS($filepath);
+            $this->jSMinimizer->minifyJS($filepath);
+        }
+    }
+
+    public function optimizeCSS($filepath)
+    {
+        $this->cssCleaner->removeUnusedCSS($filepath);
+        $this->cssMinimizer->minifyCSS($filepath);
+    }
+
+    public function optimizeJS($filepath)
+    {
+        $this->jSMinimizer->minifyJS($filepath);
     }
 
 }
@@ -73,6 +100,23 @@ class CSSOptimizerEngine implements CSSOptimizerEngineInterface {
 
 class Optimizer
 {
+
+    private $wpOptimizer;
+
+    public function __construct($type) {
+        $cssCleaner = new UnCSSProxy();
+        $cssMinimizer = new CSSMinimizerProxy();
+        $jSMinimizer = new JSMinimizerProxy();
+        if($type == "wordpress"){
+            $this->wpOptimizer = new WPOptimizer($cssCleaner, $cssMinimizer, $jSMinimizer);
+        }
+    }
+
+    public function optimize($filepathsArray)
+    {
+        $this->wpOptimizer->optimizeAll($filepathsArray);
+    }
+
     public function optimizeScripts()
     {
         $this->disableWPOEmbed();
