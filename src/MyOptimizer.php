@@ -6,10 +6,9 @@ interface CSSCleanerInterface
     public function removeUnusedCSS($filepath) : string;
 }
 
-interface CSSMinimizerInterface
-{
+interface CSSMinimizerInterface {
     // Returns path of minimized css file or empty string is minimization failed
-    public function minifyCSS($filepath) : string;
+    public function minifyCSS($filepath);
 }
 
 interface JSMinimizerInterface
@@ -23,6 +22,7 @@ class UnCSSProxy implements CSSCleanerInterface {
     {
         // This is where the logic will be written
         // Check extension
+        exec('uncss index.html > newcss.css'); 
         return "";
     }
 }
