@@ -64,7 +64,7 @@ $scripts = [
     'wp-embed',
 ];
 
-$optimizer = new Optimizer();
+$optimizer = new Optimizer("wordpress");
 
 /**
  * Earliest point where WordPress knows what page is being loaded
