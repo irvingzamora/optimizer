@@ -12,7 +12,25 @@ function test_function()
     return "Hello world";
 }
 
+function autoptimize_incompatible_admin_notice() {
+    echo '<div class="error"><p>' . __( 'Hello World' ) . '</p></div>';
+    
+}
+function example_callback( $string, $arg1, $arg2, $arg3 ) {
+    // (maybe) modify $string.
+    return $arg3;
+}
+add_filter( 'example_filter', 'example_callback', 10, 5);
+$arg1 = 54;
+$arg2 = 234;
+$value = apply_filters( 'filter_doesnt_exists', $arg1);
+$value = apply_filters( 'example_filter', 'filter me', $arg1, $arg2, 'Check1', 'Check2' );
+echo $value;
+
 add_shortcode('example', 'test_function');
+
+add_action( 'admin_notices', 'autoptimize_incompatible_admin_notice' );
+
 
 /**
  * Styles to dequeue globally
