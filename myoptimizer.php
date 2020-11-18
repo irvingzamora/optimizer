@@ -5,7 +5,7 @@
  * Version: 1.0.0
  * TODO: This is a proof of concept, not yet ready for production
  */
-require 'src/Optimizer.php';
+require 'src/MyOptimizer.php';
 
 /**
  * Styles to dequeue globally
