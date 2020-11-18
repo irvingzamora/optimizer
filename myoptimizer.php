@@ -7,6 +7,13 @@
  */
 require 'src/MyOptimizer.php';
 
+function test_function()
+{
+    return "Hello world";
+}
+
+add_shortcode('example', 'test_function');
+
 /**
  * Styles to dequeue globally
  * TODO: This array doesn't belong here, just here for testing.
