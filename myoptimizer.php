@@ -97,8 +97,11 @@ function read_buffer_callback($buffer){
     fwrite($htmlfile, $html);
     fclose($htmlfile);
     chmod($theme_dir ."/optimizedfiles/test.html", 0777);
+    $cssfile = fopen($theme_dir ."/optimizedfiles/newcss.css", "w") or die("Unable to open file!");
+    fwrite($cssfile, 'uncss '.$theme_dir .'optimizedfiles/test.html'.' > '. $theme_dir.'optimizedfiles/newcss.css');
+    fclose($cssfile);
     chmod($theme_dir ."/optimizedfiles/newcss.css", 0777);
-    exec('uncss '.$theme_dir .'optimizedfiles/test.html'.' > '. $theme_dir.'optimizedfiles/newcss.css'); 
+    exec('uncss '.$theme_dir .'/optimizedfiles/test.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css'); 
 
     //$position = strpos($string, 'a');
 
