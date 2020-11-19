@@ -7,30 +7,114 @@
  */
 require 'src/MyOptimizer.php';
 
-function test_function()
-{
-    return "Hello world";
+
+/**
+ * Loop through all the files under the theme folder
+ * Was exploring this option but realized I dont have access to the css files
+ */
+$theme_url = get_template_directory_uri();
+$theme_dir = get_template_directory();
+$wd = getcwd();
+$files1 = scandir($theme_dir);
+foreach ($files1 as $value) {
+    $newstring = substr($value, -3);
+    // var_dump($newstring);
+    if($newstring === "php"){
+        // var_dump($value);
+
+        $section = file_get_contents($theme_dir .'/'. $value);
+        // if(strpos($value, 'header.php') !== false){
+        //     var_dump($section);
+        // }
+        $html = $section;
+        $needle = '.css';
+        $lastPos = 0;
+        $positions = array();
+
+        while (($lastPos = strpos($html, $needle, $lastPos))!== false) {
+            $positions[] = $lastPos;
+            $lastPos = $lastPos + strlen($needle);
+        }
+        // var_dump($positions);
+        // Displays 3 and 10
+        // foreach ($positions as $value) {
+        //     var_dump( $value ."<br />");
+        // }  
+        // var_dump($section);
+    }
+}
+/**
+ * End Loop through all the files
+ */
+
+
+ /**
+  * UNCSS Test on template_redirect
+  * Call a function on the template_redirect action
+  * This way we have access to the html generated when the page is loaded
+  * A new html file is generated, then uncss is runned againts that file
+  * Currently it generates an html file ready to uncss.
+  * Problem it doesnt run the command uncss programmatically
+  * The good thing is you can run the command manually agains the generated file and successfully uncss
+  */
+add_action('template_redirect', 'read_buffer');
+function read_buffer(){
+    ob_start('read_buffer_callback');
 }
 
-function autoptimize_incompatible_admin_notice() {
-    echo '<div class="error"><p>' . __( 'Hello World' ) . '</p></div>';
+
+// add_action('shutdown', 'foo_buffer_stop', 1000);
+// function foo_buffer_stop(){
+//     ob_end_flush();
+// }
+function read_buffer_callback($buffer){
+    //Do something with the buffer (HTML)
+
+    $html = $buffer;
+    $needle = '<link rel="stylesheet';
+    $lastPos = 0;
+    $positions = array();
+
+            $wd = getcwd() . '/wordpress';
+    $html = str_replace('http://localhost:8000/wp-content/themes/astra', '..', $html);
+    $html = str_replace('http://localhost:8000/wp-includes', '../../../../wp-includes', $html);
     
+    $lastPos = 0;
+    
+    while (($lastPos = strpos($html, '?ver=', $lastPos))!== false) {
+        
+        $comma = strpos($html, "'", $lastPos);
+        $jsver = substr($html,$lastPos, ($comma - $lastPos));
+        $html = str_replace($jsver, '', $html);
+    }
+
+    $theme_dir = get_template_directory();
+
+    if(!file_exists($theme_dir .'/optimizedfiles')){
+        mkdir($theme_dir .'/optimizedfiles', 0777, true);
+    }
+    $htmlfile = fopen($theme_dir ."/optimizedfiles/test.html", "w") or die("Unable to open file!");
+    fwrite($htmlfile, $html);
+    fclose($htmlfile);
+    chmod($theme_dir ."/optimizedfiles/test.html", 0777);
+    chmod($theme_dir ."/optimizedfiles/newcss.css", 0777);
+    exec('uncss '.$theme_dir .'optimizedfiles/test.html'.' > '. $theme_dir.'optimizedfiles/newcss.css'); 
+
+    //$position = strpos($string, 'a');
+
+
+
+    // var_dump($buffer);
+    // var_dump($positions);
+
+    $buffer = $buffer . "textend";
+    return $buffer;
 }
-function example_callback( $string, $arg1, $arg2, $arg3 ) {
-    // (maybe) modify $string.
-    return $arg3;
-}
-add_filter( 'example_filter', 'example_callback', 10, 5);
-$arg1 = 54;
-$arg2 = 234;
-$value = apply_filters( 'filter_doesnt_exists', $arg1);
-$value = apply_filters( 'example_filter', 'filter me', $arg1, $arg2, 'Check1', 'Check2' );
-echo $value;
 
-add_shortcode('example', 'test_function');
-
-add_action( 'admin_notices', 'autoptimize_incompatible_admin_notice' );
-
+/**
+ * End UNCSS Test on template_redirect
+ * 
+ */
 
 /**
  * Styles to dequeue globally
@@ -100,6 +184,7 @@ $optimizer = new Optimizer("wordpress");
 add_action('template_redirect', function () use ($scripts, $styles, $optimizer) {
     if ( !is_page('blog') ) {
         $optimizer->optimizeScripts();
+        $optimizer->optimize(['test']);
         $optimizer->removeScripts($scripts)->removeStyles($styles);
     }
 });
