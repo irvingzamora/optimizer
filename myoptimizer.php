@@ -74,13 +74,24 @@ function read_buffer_callback($buffer){
     $needle = '<link rel="stylesheet';
     $lastPos = 0;
     $positions = array();
-
+    $theme_uri = get_theme_file_uri();
             $wd = getcwd() . '/wordpress';
-    $html = str_replace('http://localhost:8000/wp-content/themes/astra', '..', $html);
-    $html = str_replace('http://localhost:8000/wp-includes', '../../../../wp-includes', $html);
+    $html = str_replace($theme_uri, '..', $html);
+    // $html = str_replace('http://localhost:8000/wp-includes', '../../../../wp-includes', $html);
     
+    //Remove google fonts
     $lastPos = 0;
-    
+    while (($lastPos = strpos($html, 'fonts.googleapis.com', $lastPos))!== false) {
+        $lastPos = $lastPos - 100;//Return 100chars to find starting link tag
+        $googlefont_start = strpos($html, "<link rel='stylesheet'", $lastPos);
+        $googlefont_end = strpos($html, "/>", $googlefont_start) + strlen("/>");
+        $googlefont = substr($html,$googlefont_start, ($googlefont_end - $googlefont_start));
+        $html = str_replace($googlefont, '', $html);
+        $lastPos = $googlefont_end;
+    }
+
+    //Remove js versioning
+    $lastPos = 0;
     while (($lastPos = strpos($html, '?ver=', $lastPos))!== false) {
         
         $comma = strpos($html, "'", $lastPos);
@@ -90,6 +101,7 @@ function read_buffer_callback($buffer){
 
     $theme_dir = get_template_directory();
 
+    //Create directory to store optimized files
     if(!file_exists($theme_dir .'/optimizedfiles')){
         mkdir($theme_dir .'/optimizedfiles', 0777, true);
     }
@@ -98,7 +110,7 @@ function read_buffer_callback($buffer){
     fclose($htmlfile);
     chmod($theme_dir ."/optimizedfiles/test.html", 0777);
     $cssfile = fopen($theme_dir ."/optimizedfiles/newcss.css", "w") or die("Unable to open file!");
-    fwrite($cssfile, 'uncss '.$theme_dir .'optimizedfiles/test.html'.' > '. $theme_dir.'optimizedfiles/newcss.css');
+    fwrite($cssfile, 'uncss '.$theme_dir .'/optimizedfiles/test.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css');
     fclose($cssfile);
     chmod($theme_dir ."/optimizedfiles/newcss.css", 0777);
     exec('uncss '.$theme_dir .'/optimizedfiles/test.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css'); 
