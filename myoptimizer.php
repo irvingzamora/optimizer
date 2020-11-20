@@ -105,15 +105,15 @@ function read_buffer_callback($buffer){
     if(!file_exists($theme_dir .'/optimizedfiles')){
         mkdir($theme_dir .'/optimizedfiles', 0777, true);
     }
-    $htmlfile = fopen($theme_dir ."/optimizedfiles/test.html", "w") or die("Unable to open file!");
+    $htmlfile = fopen($theme_dir ."/optimizedfiles/temp.html", "w") or die("Unable to open file!");
     fwrite($htmlfile, $html);
     fclose($htmlfile);
-    chmod($theme_dir ."/optimizedfiles/test.html", 0777);
+    chmod($theme_dir ."/optimizedfiles/temp.html", 0777);
     $cssfile = fopen($theme_dir ."/optimizedfiles/newcss.css", "w") or die("Unable to open file!");
-    fwrite($cssfile, 'uncss '.$theme_dir .'/optimizedfiles/test.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css');
+    fwrite($cssfile, 'uncss '.$theme_dir .'/optimizedfiles/temp.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css');
     fclose($cssfile);
     chmod($theme_dir ."/optimizedfiles/newcss.css", 0777);
-    exec('uncss '.$theme_dir .'/optimizedfiles/test.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css'); 
+    exec('uncss '.$theme_dir .'/optimizedfiles/temp.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css'); 
 
     //$position = strpos($string, 'a');
 
