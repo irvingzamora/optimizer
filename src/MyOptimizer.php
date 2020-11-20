@@ -1,59 +1,13 @@
 <?php
 
-interface CSSCleanerInterface
-{
-    // Returns path of optimized css file or empty string if optimization failed
-    public function removeUnusedCSS($filepath) : string;
-}
 
-interface CSSMinimizerInterface {
-    // Returns path of minimized css file or empty string is minimization failed
-    public function minifyCSS($filepath);
-}
-
-interface JSMinimizerInterface
-{
-    // Returns path of minimized js file or empty string is minimization failed
-    public function minifyJS($filepath) : string;
-}
-
-class UnCSSProxy implements CSSCleanerInterface {
-    public function removeUnusedCSS($filepath) : string
-    {
-        // This is where the logic will be written
-        // Check extension
-        exec('uncss index.html > newcss.css'); 
-        return "";
-    }
-}
-
-class HeliumCSSProxy implements CSSCleanerInterface {
-    public function removeUnusedCSS($filepath) : string
-    {
-        return "";
-    }
-}
-
-class CSSMinimizerProxy implements CSSMinimizerInterface {
-    
-    public function minifyCSS($filepath) : string
-    {
-        return "";
-    }
-}
-
-class JSMinimizerProxy implements JSMinimizerInterface {
-    public function minifyJS($filepath) : string
-    {
-        return "";
-    }
-}
-
-interface OptimizerInterface {
-    public function optimizeAll(Array $filepathsArray);
-    public function optimizeCSS(Array $filepathsArray);
-    public function optimizeJS(Array $filepathsArray);
-}
+include_once 'OptimizerInterface.php';
+include_once 'CSSCleanerInterface.php';
+include_once 'CSSMinimizerInterface.php';
+include_once 'JSMinimizerInterface.php';
+include_once 'UnCSSProxy.php';
+include_once 'CSSMinimizerProxy.php';
+include_once 'JSMinimizerProxy.php';
 
 class WPOptimizer implements OptimizerInterface{
 
@@ -67,25 +21,27 @@ class WPOptimizer implements OptimizerInterface{
         $this->jSMinimizer = $jSMinimizer;
     }
 
-    public function optimizeAll($filepathsArray)
+    public function optimizeCurrentPage()
+    {
+        add_action('template_redirect', 'read_buffer');
+        
+    }
+
+    public function read_buffer(){
+        ob_start('read_buffer_callback');
+    }
+
+    
+    public function optimizeAllPages($filepathsArray)
     {
         foreach ($filepathsArray as $filepath) {
-            $this->cssCleaner->removeUnusedCSS($filepath);
-            $this->cssMinimizer->minifyCSS($filepath);
-            $this->jSMinimizer->minifyJS($filepath);
+            // $this->cssCleaner->removeUnusedCSS($inputfile_path, $outputfile_path)
+            // $this->cssMinimizer->minifyCSS($inputfile_path, $outputfile_path)
+            // $this->jSMinimizer->minifyJS($inputfile_path, $outputfile_path)
         }
     }
 
-    public function optimizeCSS($filepath)
-    {
-        $this->cssCleaner->removeUnusedCSS($filepath);
-        $this->cssMinimizer->minifyCSS($filepath);
-    }
-
-    public function optimizeJS($filepath)
-    {
-        $this->jSMinimizer->minifyJS($filepath);
-    }
+    
 
 }
 
@@ -109,12 +65,23 @@ class Optimizer
         $jSMinimizer = new JSMinimizerProxy();
         if($type == "wordpress"){
             $this->wpOptimizer = new WPOptimizer($cssCleaner, $cssMinimizer, $jSMinimizer);
+        }if ($type == "x") {
+            
+        } else {
+            #Type not supported
         }
+        
     }
 
-    public function optimize($filepathsArray)
+
+    public function optimizeAll($filepathsArray)
     {
-        $this->wpOptimizer->optimizeAll($filepathsArray);
+        $this->wpOptimizer->optimizeAllPages($filepathsArray);
+    }
+    
+    public function optimize()
+    {
+        $this->wpOptimizer->optimizeCurrentPage();
     }
 
     public function optimizeScripts()
@@ -262,4 +229,76 @@ class Optimizer
             //var_dump( $enqueued_styles );
         });
     }
+}
+
+function read_buffer(){
+    ob_start('read_buffer_callback');
+}
+
+function read_buffer_callback($buffer){
+    //Do something with the buffer (HTML)
+
+    $cssCleaner = new UnCSSProxy();
+    $cssMinimizer = new CSSMinimizerProxy();
+    $jSMinimizer = new JSMinimizerProxy();
+    $wpOptimizer = new WPOptimizer($cssCleaner, $cssMinimizer, $jSMinimizer);
+
+    $html = $buffer;
+    $needle = '<link rel="stylesheet';
+    $lastPos = 0;
+    $positions = array();
+    $theme_uri = get_theme_file_uri();
+            $wd = getcwd() . '/wordpress';
+    $html = str_replace($theme_uri, '..', $html);
+    // $html = str_replace('http://localhost:8000/wp-includes', '../../../../wp-includes', $html);
+    
+    //Remove google fonts
+    $lastPos = 0;
+    while (($lastPos = strpos($html, 'fonts.googleapis.com', $lastPos))!== false) {
+        $lastPos = $lastPos - 100;//Return 100chars to find starting link tag
+        $googlefont_start = strpos($html, "<link rel='stylesheet'", $lastPos);
+        $googlefont_end = strpos($html, "/>", $googlefont_start) + strlen("/>");
+        $googlefont = substr($html,$googlefont_start, ($googlefont_end - $googlefont_start));
+        $html = str_replace($googlefont, '', $html);
+        $lastPos = $googlefont_end;
+    }
+
+    //Remove js versioning
+    $lastPos = 0;
+    while (($lastPos = strpos($html, '?ver=', $lastPos))!== false) {
+        
+        $comma = strpos($html, "'", $lastPos);
+        $jsver = substr($html,$lastPos, ($comma - $lastPos));
+        $html = str_replace($jsver, '', $html);
+    }
+
+    $theme_dir = get_template_directory();
+
+    //Create directory to store optimized files
+    if(!file_exists($theme_dir .'/optimizedfiles')){
+        mkdir($theme_dir .'/optimizedfiles', 0777, true);
+    }
+    $htmlfile = fopen($theme_dir ."/optimizedfiles/temp.html", "w") or die("Unable to open file!");
+    fwrite($htmlfile, $html);
+    fclose($htmlfile);
+    chmod($theme_dir ."/optimizedfiles/temp.html", 0777);
+    $cssfile = fopen($theme_dir ."/optimizedfiles/newcss.css", "w") or die("Unable to open file!");
+    fwrite($cssfile, 'uncss '.$theme_dir .'/optimizedfiles/temp.html'.' > '. $theme_dir.'/optimizedfiles/newcss.css');
+    fclose($cssfile);
+    chmod($theme_dir ."/optimizedfiles/newcss.css", 0777);
+    $inputfile_path = $theme_dir .'/optimizedfiles/temp.html';
+    $outputfile_path = $theme_dir.'/optimizedfiles/newcss.css';
+
+    $wpOptimizer->cssCleaner->removeUnusedCSS($inputfile_path, $outputfile_path);
+    $wpOptimizer->cssMinimizer->minifyCSS($inputfile_path, $outputfile_path);
+    $wpOptimizer->jSMinimizer->minifyJS($inputfile_path, $outputfile_path);
+    //$position = strpos($string, 'a');
+
+
+
+    // var_dump($buffer);
+    // var_dump($positions);
+
+    $buffer = $buffer . "textend";
+    return $buffer;
 }
