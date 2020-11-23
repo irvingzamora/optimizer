@@ -21,13 +21,28 @@ class WPOptimizer implements OptimizerInterface{
         $this->jSMinimizer = $jSMinimizer;
     }
 
+    public function getCSSCleaner()
+    {
+        return $this->cssCleaner;
+    }
+
+    public function getCSSMinimizer()
+    {
+        return $this->cssMinimizer;
+    }
+
+    public function getJSMinimizer()
+    {
+        return $this->jSMinimizer;
+    }
+
     public function optimizeCurrentPage()
     {
-        add_action('template_redirect', 'read_buffer');
+        add_action('template_redirect', [$this, 'readBuffer']);
         
     }
 
-    public function read_buffer(){
+    public function readBuffer(){
         ob_start('read_buffer_callback');
     }
 
@@ -231,9 +246,9 @@ class Optimizer
     }
 }
 
-function read_buffer(){
-    ob_start('read_buffer_callback');
-}
+// function read_buffer(){
+//     ob_start('read_buffer_callback');
+// }
 
 function read_buffer_callback($buffer){
     //Do something with the buffer (HTML)
@@ -289,9 +304,9 @@ function read_buffer_callback($buffer){
     $inputfile_path = $theme_dir .'/optimizedfiles/temp.html';
     $outputfile_path = $theme_dir.'/optimizedfiles/newcss.css';
 
-    $wpOptimizer->cssCleaner->removeUnusedCSS($inputfile_path, $outputfile_path);
-    $wpOptimizer->cssMinimizer->minifyCSS($inputfile_path, $outputfile_path);
-    $wpOptimizer->jSMinimizer->minifyJS($inputfile_path, $outputfile_path);
+    $wpOptimizer->getCSSCleaner()->removeUnusedCSS($inputfile_path, $outputfile_path);
+    $wpOptimizer->getCSSMinimizer()->minifyCSS($inputfile_path, $outputfile_path);
+    $wpOptimizer->getJSMinimizer()->minifyJS($inputfile_path, $outputfile_path);
     //$position = strpos($string, 'a');
 
 
