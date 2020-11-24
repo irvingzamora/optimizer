@@ -7,47 +7,6 @@
  */
 require 'src/MyOptimizer.php';
 
-
-/**
- * Loop through all the files under the theme folder
- * Was exploring this option but realized I dont have access to the css files
- */
-$theme_url = get_template_directory_uri();
-$theme_dir = get_template_directory();
-$wd = getcwd();
-$files1 = scandir($theme_dir);
-foreach ($files1 as $value) {
-    $newstring = substr($value, -3);
-    // var_dump($newstring);
-    if($newstring === "php"){
-        // var_dump($value);
-
-        $section = file_get_contents($theme_dir .'/'. $value);
-        // if(strpos($value, 'header.php') !== false){
-        //     var_dump($section);
-        // }
-        $html = $section;
-        $needle = '.css';
-        $lastPos = 0;
-        $positions = array();
-
-        while (($lastPos = strpos($html, $needle, $lastPos))!== false) {
-            $positions[] = $lastPos;
-            $lastPos = $lastPos + strlen($needle);
-        }
-        // var_dump($positions);
-        // Displays 3 and 10
-        // foreach ($positions as $value) {
-        //     var_dump( $value ."<br />");
-        // }  
-        // var_dump($section);
-    }
-}
-/**
- * End Loop through all the files
- */
-
-
 /**
  * Styles to dequeue globally
  * TODO: This array doesn't belong here, just here for testing.
